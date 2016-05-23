@@ -1,0 +1,15 @@
+---- proxyhost Matches (18 in 1 files) ----
+Webbench.c (d:\study\open-source\webbench-1.5):char *proxyhost=NULL;
+Webbench.c (d:\study\open-source\webbench-1.5):	     proxyhost=optarg;
+Webbench.c (d:\study\open-source\webbench-1.5):	printf("proxyhost: %s\n", proxyhost);
+Webbench.c (d:\study\open-source\webbench-1.5): if(proxyhost!=NULL) printf(", via proxy server %s:%d",proxyhost,proxyport);
+Webbench.c (d:\study\open-source\webbench-1.5):  if(force_reload && proxyhost!=NULL && http10<1) http10=1;
+Webbench.c (d:\study\open-source\webbench-1.5):  if(proxyhost==NULL)//如果不是以主机名+端口号方式，则只接受http protocol
+Webbench.c (d:\study\open-source\webbench-1.5):  	printf("proxyhost:%s\n", proxyhost);
+Webbench.c (d:\study\open-source\webbench-1.5):  if(proxyhost==NULL)
+Webbench.c (d:\study\open-source\webbench-1.5):    printf("ProxyHost=%s\nProxyPort=%d\n",proxyhost,proxyport);
+Webbench.c (d:\study\open-source\webbench-1.5):  if(proxyhost==NULL && http10>0)
+Webbench.c (d:\study\open-source\webbench-1.5):  if(force_reload && proxyhost!=NULL)
+Webbench.c (d:\study\open-source\webbench-1.5):  i=Socket(proxyhost==NULL?host:proxyhost,proxyport);
+Webbench.c (d:\study\open-source\webbench-1.5):    if(proxyhost==NULL)
+Webbench.c (d:\study\open-source\webbench-1.5):      benchcore(proxyhost,proxyport,request);
