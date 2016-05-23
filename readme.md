@@ -10,6 +10,7 @@ Webbech能测试处在相同硬件上,不同服务的性能以及不同硬件上
 ##编译
 
 `make clean`
+
 `sudo make && make install`
 
 
