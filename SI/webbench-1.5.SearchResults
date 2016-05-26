@@ -1,15 +1,10 @@
----- proxyhost Matches (18 in 1 files) ----
-Webbench.c (d:\study\open-source\webbench-1.5):char *proxyhost=NULL;
-Webbench.c (d:\study\open-source\webbench-1.5):	     proxyhost=optarg;
-Webbench.c (d:\study\open-source\webbench-1.5):	printf("proxyhost: %s\n", proxyhost);
-Webbench.c (d:\study\open-source\webbench-1.5): if(proxyhost!=NULL) printf(", via proxy server %s:%d",proxyhost,proxyport);
-Webbench.c (d:\study\open-source\webbench-1.5):  if(force_reload && proxyhost!=NULL && http10<1) http10=1;
-Webbench.c (d:\study\open-source\webbench-1.5):  if(proxyhost==NULL)//如果不是以主机名+端口号方式，则只接受http protocol
-Webbench.c (d:\study\open-source\webbench-1.5):  	printf("proxyhost:%s\n", proxyhost);
-Webbench.c (d:\study\open-source\webbench-1.5):  if(proxyhost==NULL)
-Webbench.c (d:\study\open-source\webbench-1.5):    printf("ProxyHost=%s\nProxyPort=%d\n",proxyhost,proxyport);
-Webbench.c (d:\study\open-source\webbench-1.5):  if(proxyhost==NULL && http10>0)
-Webbench.c (d:\study\open-source\webbench-1.5):  if(force_reload && proxyhost!=NULL)
-Webbench.c (d:\study\open-source\webbench-1.5):  i=Socket(proxyhost==NULL?host:proxyhost,proxyport);
-Webbench.c (d:\study\open-source\webbench-1.5):    if(proxyhost==NULL)
-Webbench.c (d:\study\open-source\webbench-1.5):      benchcore(proxyhost,proxyport,request);
+---- clients Matches (12 in 1 files) ----
+Webbench.c (d:\study\open-source\webbench-1.5):int clients=1;
+Webbench.c (d:\study\open-source\webbench-1.5): {"clients",required_argument,NULL,'c'},
+Webbench.c (d:\study\open-source\webbench-1.5):	"  -c|--clients <n>         Run <n> HTTP clients at once. Default one.\n"
+Webbench.c (d:\study\open-source\webbench-1.5):   case 'c': clients=atoi(optarg);break;
+Webbench.c (d:\study\open-source\webbench-1.5): if(clients==0) clients=1;
+Webbench.c (d:\study\open-source\webbench-1.5): if(clients==1) printf("1 client");
+Webbench.c (d:\study\open-source\webbench-1.5):   printf("%d clients",clients);
+Webbench.c (d:\study\open-source\webbench-1.5):  for(i=0;i<clients;i++)
+Webbench.c (d:\study\open-source\webbench-1.5):		  if(--clients==0) break;

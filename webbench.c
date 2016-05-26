@@ -111,6 +111,14 @@ int main(int argc, char *argv[])
           return 2;
  } 
 
+ 
+/*
+getopt_long用来处理命令行参数, 前两个参数就是main函数传过来的argc,argv。第三个参数
+optstring是一个字符串，表示可以接受的参数。例如，"a:b:cd"，表示可以接受的参数是a,b,c,d，其中，a和b参数带冒号，表示后面跟有更多的参数值。(例如：-a host -b name)
+
+比如这个代码里，表示webbench命令可以支持-9,-f -t等命令，其中-p, -c参数后面必须带有参数值，像-p 9000这样。
+*/
+
  while((opt=getopt_long(argc,argv,"912Vfrt:p:c:?h",long_options,&options_index))!=EOF )
  {
   switch(opt)
@@ -125,6 +133,15 @@ int main(int argc, char *argv[])
    case 't': benchtime=atoi(optarg);break;	     //optarg表示命令后的参数，例如-c 100，optarg为100。
    case 'p': 
 	     /* proxy server parsing server:port */
+		 /*
+		 找一个字符c在另一个字符串str中末次出现的位置（也就是从str的右侧开始查找字符c首次出现的位置），
+		 并返回从字符串中的这个位置起，一直到字符串结束的所有字符。如果未能找到指定字符，那么函数将返回NULL。
+
+
+		 如果一个选项带参数，比如-p 192.168.0.1:9800, optarg会指向它的参数，也就是"192.168.0.1:9800"
+		 那么这种情况下，proxyhost就是192.168.0.1, proxyport就是9800
+
+		 */
 	     tmp=strrchr(optarg,':');
 	     proxyhost=optarg;
 	     if(tmp==NULL)
@@ -154,7 +171,23 @@ int main(int argc, char *argv[])
 
  printf("optind: %d\n", optind);
  printf("argc: %d\n", argc);
+ printf("argv: %s\n\n", argv);
+
+
  
+ /*
+ 这一句初看有点难理解，其实是这样的:
+ 
+ getopt_long先将argv中非option的参数移到argv后端，这就可以让option变成位置无关的，optind初值为1，getopt会渐进遍历argv，
+ 每次调用后都会让optind指向下一个option在argv中索引，每次optind移动多少取决于optstring：
+ 1. 遇到"x"，选项不带参数，optind += 1
+ 2. 遇到“x:”，带参数的选项，optarg = argv[optind + 1], optind += 2
+ 如果一切顺利，最后optind应该指向第一个非option参数，如果optind >= argc，说明没有已经没有参数了
+
+ 如果带url，比如这样的，
+ webbench -c 30 http://www.baidu.com/
+ 那么，optind=3, argc=4，然后optind指向就是url的索引.
+ */
  if(optind==argc) {
                       fprintf(stderr,"webbench: Missing URL!\n");
 		      usage();
@@ -168,7 +201,6 @@ int main(int argc, char *argv[])
 	 "Copyright (c) Radim Kolar 1997-2004, GPL Open Source Software.\n"
 	 );
 
- //最后为URL，所以optind应该是URL的位置  
  build_request(argv[optind]);
 
 
@@ -230,7 +262,9 @@ void build_request(const char *url)
   bzero(host,MAXHOSTNAMELEN);
   bzero(request,REQUEST_SIZE);
 
-  if(force_reload && proxyhost!=NULL && http10<1) http10=1;//指当使用了缓存和代理，最低要使用http1.0协议。0.9版本，没有代理这个概念，也没有缓存概念??
+  //指当使用了缓存和代理，最低要使用http1.0协议。0.9版本，没有代理这个概念，也没有缓存概念??
+  //force_reload为1表示没有缓存
+  if(force_reload && proxyhost!=NULL && http10<1) http10=1;
   if(method==METHOD_HEAD && http10<1) http10=1;
   if(method==METHOD_OPTIONS && http10<2) http10=2;
   if(method==METHOD_TRACE && http10<2) http10=2;
@@ -280,6 +314,18 @@ void build_request(const char *url)
                                 fprintf(stderr,"\nInvalid URL syntax - hostname don't ends with '/'.\n");
                                 exit(2);
                               }
+
+
+  /*
+  如果参数中没有指明端口,则用80,
+  80端口是为HTTP（HyperText Transport Protocol)即超文本传输协议开放的，此为上网冲浪使用次数最多的协议，
+  主要用于WWW（World Wide Web）即万维网传输信息的协议。可以通过HTTP地址（即常说的“网址”）加“:80”来访问网站，
+  因为浏览网页服务默认的端口号都是80，因此只需输入网址即可，不用输入“:80”了。
+
+  当然也可以指明端口，比如这样:
+
+  webbench -c 30 http://www.baidu.com:9800/
+  */
   if(proxyhost==NULL)
   {
 	   /* get port from hostname */
@@ -311,13 +357,6 @@ void build_request(const char *url)
    printf("request=%s\n",request);
   }
 
-
-
-/*
-GET /DevMgmt/DiscoveryTree.xm1 HTTP/1.1
- Host:127.0.0.1:8080
-
-*/
   
   if(http10==1)
 	  strcat(request," HTTP/1.0");
@@ -411,6 +450,7 @@ static int bench(void)
   if(pid== (pid_t) 0)
   {
     /* I am a child */
+	//子进程向管道写数据，发送结果
     if(proxyhost==NULL)
       benchcore(host,proxyport,request);
          else
@@ -430,6 +470,7 @@ static int bench(void)
   } else
   {
   	/* I am the father */
+	//父进程从管道读数据，显示结果
 	  f=fdopen(mypipe[0],"r");
 	  if(f==NULL) 
 	  {
@@ -437,27 +478,6 @@ static int bench(void)
 		  return 3;
 	  }
 
-/*
-函数名: setvbuf 
-
-　　功 能: 把缓冲区与流相关 
-
-　　用 法: int setvbuf(FILE *stream, char *buf, int type, unsigned size); 
-
-　　参数：stream ：指向流的指针 ； 
-
-　　buf ： 期望缓冲区的地址； 
-
-　　type ： 期望缓冲区的类型： 
-
-　　_IOFBF(满缓冲）：当缓冲区为空时，从流读入数据。或者当缓冲区满时，向流写入数 据。 
-
-　　_IOLBF(行缓冲）：每次从流中读入一行数据或向流中写入一行数据。 
-
-　　_IONBF(无缓冲）：直接从流中读入数据或直接向流中写入数据，而没有缓冲区。 
-
-　　size ： 缓冲区内字节的数量。 
-*/
 	  
 	  setvbuf(f,NULL,_IONBF,0);
 	  speed=0;
@@ -498,47 +518,16 @@ void benchcore(const char *host,const int port,const char *req)
 
  /*
 
-sigaction函数用于改变进程接收到特定信号后的行为。该函数的第一个参数为信号的值，
-可以为除SIGKILL及SIGSTOP外的任何一个特定有效的信号（为这两个信号定义自己的处理函数，将导致信号安装错误）。
+sigaction函数用于改变进程接收到特定信号后的行为。该函数的第一个参数为信号的值，SIGALRM 14 A 由alarm(2)发出的信号
+
 第二个参数是指向结构sigaction的一个实例的指针，在结构sigaction的实例中，指定了对特定信号的处理，
-可以为空，进程会以缺省方式对信号处理；第三个参数oldact指向的对象用来保存返回的原来对相应信号的处理，可指定oldact为NULL。
-如果把第二、第三个参数都设为NULL，那么该函数可用于检查信号的有效性。
-
- Linux支持的信号列表如下。很多信号是与机器的体系结构相关的
-
-信号值 默认处理动作 发出信号的原因
-
-SIGHUP 1 A 终端挂起或者控制进程终止
-
-SIGINT 2 A 键盘中断（如break键被按下）
-
-SIGQUIT 3 C 键盘的退出键被按下
-
-SIGILL 4 C 非法指令
-
-SIGABRT 6 C 由abort(3)发出的退出指令
-
-SIGFPE 8 C 浮点异常
-
-SIGKILL 9 AEF Kill信号
-
-SIGSEGV 11 C 无效的内存引用
-
-SIGPIPE 13 A 管道破裂: 写一个没有读端口的管道
-
-SIGALRM 14 A 由alarm(2)发出的信号
-
-unsigned int alarm(unsigned int seconds)
+第三个参数oldact指向的对象用来保存返回的原来对相应信号的处理，可指定oldact为NULL。
 
 系统调用alarm安排内核为调用进程在指定的seconds秒后发出一个SIGALRM的信号。如果指定的参数seconds为0，
 则不再发送 SIGALRM信号。后一次设定将取消前一次的设定。该调用返回值为上次定时调用到发送之间剩余的时间，或者因为没有前一次定时调用而返回0。
 
- 
-
 注意，在使用时，alarm只设定为发送一次信号，如果要多次发送，就要多次使用alarm调用。
 
-
- 
  */
  struct sigaction sa;
 
@@ -548,7 +537,7 @@ unsigned int alarm(unsigned int seconds)
  if(sigaction(SIGALRM,&sa,NULL))
     exit(3);
 
- 
+ //这里相当于设置一个benchtime时间的闹钟，限定socket访问的时间
  alarm(benchtime);
 
  rlen=strlen(req);
@@ -566,7 +555,7 @@ unsigned int alarm(unsigned int seconds)
     s=Socket(host,port);                          
     if(s<0) { failed++;continue;} 
 
-	
+	//发送http请求报文
     if(rlen!=write(s,req,rlen)) {failed++;close(s);continue;}
 
 	

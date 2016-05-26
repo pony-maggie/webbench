@@ -38,7 +38,9 @@ int Socket(const char *host, int clientPort)
 
     inaddr = inet_addr(host);//将一个点分十进制的IP转换成一个长整数型数
     if (inaddr != INADDR_NONE)
+    {
         memcpy(&ad.sin_addr, &inaddr, sizeof(inaddr));
+    }
     else
     {
         hp = gethostbyname(host);//host还可以是域名
